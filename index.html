@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Security Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="flex items-center justify-center mb-4">
+                <i class="fas fa-shield-alt text-6xl text-purple-400"></i>
+            </div>
+            <h1 class="text-5xl font-bold text-white mb-3">URL Security Checker</h1>
+            <p class="text-purple-200 text-lg">Check if security vendor is in our database</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="max-w-4xl mx-auto bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-purple-500/20">
+            <!-- Search Input -->
+            <div class="mb-8">
+                <label class="block text-purple-200 font-semibold mb-3 text-lg">
+                    <i class="fas fa-search mr-2"></i>Search Security Vendor
+                </label>
+                <div class="flex gap-3">
+                    <input 
+                        type="text" 
+                        id="vendorInput" 
+                        placeholder="Enter vendor name (e.g., Avira, CRDF)"
+                        class="flex-1 px-4 py-3 rounded-lg bg-white/20 border border-purple-400/30 text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        onkeypress="if(event.key==='Enter') searchVendor()"
+                    >
+                    <button 
+                        onclick="searchVendor()" 
+                        class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg transform transition hover:scale-105 active:scale-95"
+                    >
+                        <i class="fas fa-search mr-2"></i>Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- View AV Vendors Button -->
+            <div class="mb-8 text-center">
+                <button 
+                    onclick="toggleVendorList()" 
+                    class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-lg shadow-lg transform transition hover:scale-105 active:scale-95"
+                >
+                    <i class="fas fa-list mr-2"></i>View AV Vendors
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="hidden">
+                <div id="searchResult" class="p-6 rounded-xl mb-6"></div>
+            </div>
+
+            <!-- AV Vendors List (Hidden by default) -->
+            <div id="vendorListSection" class="hidden">
+                <div class="bg-white/5 rounded-xl p-6 border border-purple-400/20 mb-6">
+                    <h3 class="text-2xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-shield-alt mr-3 text-purple-400"></i>
+                        AV Vendors List
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="vendorGrid"></div>
+                </div>
+
+                <!-- Classification Rules -->
+                <div class="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-xl p-6 border border-purple-400/30">
+                    <h4 class="text-xl font-bold text-white mb-4 flex items-center">
+                        <i class="fas fa-info-circle mr-2 text-purple-400"></i>
+                        Classification Rules
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="flex items-center bg-white/10 rounded-lg p-3">
+                            <i class="fas fa-check-circle text-yellow-400 text-xl mr-3"></i>
+                            <span class="text-purple-100"><strong class="text-white">3 phishing results</strong> = Phishing</span>
+                        </div>
+                        <div class="flex items-center bg-white/10 rounded-lg p-3">
+                            <i class="fas fa-check-circle text-red-400 text-xl mr-3"></i>
+                            <span class="text-purple-100"><strong class="text-white">3 malware results</strong> = Malware</span>
+                        </div>
+                        <div class="flex items-center bg-white/10 rounded-lg p-3">
+                            <i class="fas fa-check-circle text-orange-400 text-xl mr-3"></i>
+                            <span class="text-purple-100"><strong class="text-white">2 malware + 1 malicious</strong> = Malware</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 text-purple-300 text-sm">
+            <p><i class="fas fa-shield-alt mr-2"></i>Powered by multiple security databases</p>
+        </div>
+    </div>
+
+    <script>
+        const avVendors = [
+            'AlienVault',
+            'Avira',
+            'Baidu-International',
+            'Bitdefender',
+            'Emisoft',
+            'ESET',
+            'G-DATA',
+            'Kaspersky',
+            'malwares.com URL checker',
+            'Netcraft',
+            'PhishTank',
+            'Forcepoint ThreatSeeker',
+            'SecureBrain',
+            'SpyEyeTracker',
+            'URLQuery',
+            'ZeusTracker',
+            'zvelo',
+            'Fortinet'
+        ];
+
+        function searchVendor() {
+            const input = document.getElementById('vendorInput').value.trim();
+            
+            if (!input) {
+                alert('Please enter a vendor name to search');
+                return;
+            }
+
+            const resultsSection = document.getElementById('resultsSection');
+            const searchResult = document.getElementById('searchResult');
+            
+            resultsSection.classList.remove('hidden');
+
+            // Case-insensitive search
+            const found = avVendors.find(vendor => 
+                vendor.toLowerCase() === input.toLowerCase()
+            );
+
+            if (found) {
+                searchResult.innerHTML = `
+                    <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-500/50 rounded-xl p-6">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-check-circle text-green-400 text-4xl mr-4"></i>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Vendor Found!</h3>
+                                <p class="text-green-300">This vendor is in our phishing/malware database</p>
+                            </div>
+                        </div>
+                        <div class="bg-white/10 rounded-lg p-4 mt-4">
+                            <p class="text-purple-200 text-sm mb-2">Vendor Name:</p>
+                            <p class="text-white text-xl font-bold">${found}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                searchResult.innerHTML = `
+                    <div class="bg-gradient-to-r from-red-500/20 to-orange-500/20 border-2 border-red-500/50 rounded-xl p-6">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-times-circle text-red-400 text-4xl mr-4"></i>
+                            <div>
+                                <h3 class="text-2xl font-bold text-white">Not Found</h3>
+                                <p class="text-red-300">This vendor is not part of our phishing/malware database</p>
+                            </div>
+                        </div>
+                        <div class="bg-white/10 rounded-lg p-4 mt-4">
+                            <p class="text-purple-200 text-sm mb-2">You searched for:</p>
+                            <p class="text-white text-xl font-bold">${input}</p>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button 
+                                onclick="toggleVendorList()" 
+                                class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                            >
+                                <i class="fas fa-list mr-2"></i>View Available Vendors
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            searchResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function toggleVendorList() {
+            const vendorListSection = document.getElementById('vendorListSection');
+            const vendorGrid = document.getElementById('vendorGrid');
+            
+            if (vendorListSection.classList.contains('hidden')) {
+                // Show vendor list
+                vendorListSection.classList.remove('hidden');
+                
+                // Populate vendor grid
+                vendorGrid.innerHTML = '';
+                avVendors.forEach(vendor => {
+                    vendorGrid.innerHTML += `
+                        <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 rounded-lg p-4 transition hover:scale-105 hover:border-purple-400/60">
+                            <div class="flex items-center">
+                                <i class="fas fa-shield-alt text-purple-400 text-xl mr-3"></i>
+                                <span class="text-white font-semibold text-sm">${vendor}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Scroll to vendor list
+                vendorListSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                // Hide vendor list
+                vendorListSection.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
